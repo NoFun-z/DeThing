@@ -16,8 +16,8 @@ app.use(bodyParser.json());
 // Define route handler for /Login.html endpoint
 app.get('/Login.html', (req, res) => {
 
-    // Pass the stdout data to the Login.ejs file and render it with camera element ID as needed
-    res.render('Login');
+  // Pass the stdout data to the Login.ejs file and render it with camera element ID as needed
+  res.render('Login');
 });
 
 app.get('/Home.html', (req, res) => {
