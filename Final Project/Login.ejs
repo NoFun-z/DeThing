@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+
+<body>
+    <p style="text-align: center;">Please show your face in front of the camera to login</p>
+    <div style="text-align: center;">
+        <video id="cameraArea" style="width: 640px; height: 480px;"></video> <!-- Area for camera feed -->
+    </div>
+    <script>
+        // Start capturing frames from camera
+        function startCapture() {
+            const videoElement = document.getElementById('cameraArea');
+            videoElement.autoplay = true;
+
+            // Get camera access
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    videoElement.srcObject = stream;
+                })
+                .catch((error) => {
+                    console.error('Failed to get camera access:', error);
+                });
+        }
+
+        // Call the functions to start capturing frames and run Python script
+        startCapture();
+
+        // Function to call Python script
+        function runPythonScript() {
+            // Make an HTTP request to the server to call the Python script
+            fetch('/Login.html', { method: 'GET' }) // Change the endpoint to match your server route
+                .then((response) => {
+                    if (response.ok) {
+                        console.log('Python script executed successfully');
+                    } else {
+                        console.error('Failed to execute Python script:', response.statusText);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Failed to execute Python script:', error);
+                });
+        }
+
+    </script>
+</body>
+
+</html>
