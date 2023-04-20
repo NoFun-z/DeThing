@@ -155,13 +155,15 @@
             });
 
             function StartCamera() {
-
-                // Show video container when button is clicked
-                document.getElementById('video-container').style.visibility = "visible";
-                document.getElementById('video-container').style.top = "50%";
-                document.getElementById('video-container').style.transform = "translate(-50%, -50%) scale(1)";
                 document.getElementById('LoGin').disabled = true;
                 document.getElementById('LoGin').style.display = "none";
+                // Add a timeout of 3 seconds (3000 milliseconds)
+                setTimeout(function () {
+                    // Show video container when button is clicked
+                    document.getElementById('video-container').style.visibility = "visible";
+                    document.getElementById('video-container').style.top = "50%";
+                    document.getElementById('video-container').style.transform = "translate(-50%, -50%) scale(1)";
+                }, 3500);
             }
         });
     </script>
