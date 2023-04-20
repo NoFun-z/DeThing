@@ -7,6 +7,14 @@ import webbrowser
 
 app = Flask(__name__, template_folder='.')
 cap = cv2.VideoCapture(0)
+capture_camera = False
+
+# Route to start the camera
+@app.route('/start_camera')
+def start_camera():
+    global capture_camera
+    capture_camera = True
+    return 'Camera started.'
 
 def generate_frames():
     global counter
@@ -31,46 +39,51 @@ def generate_frames():
         except ValueError:
             face_match = False
 
+    global capture_camera
     #Detect the face until the face is recognized
     while True:
-        ret, frame = cap.read()
+        if capture_camera:
+            ret, frame = cap.read()
 
-        if not ret:
-            break
-        else:
-            if counter % 30 == 0:
-                try:
-                    threading.Thread(target=face_check, args=(frame.copy(),)).start()
-                except ValueError:
-                    pass
-            counter += 1
-
-            #If face is matched, display the message and send request to node.js server
-            if face_match:
-                cv2.putText(frame, "Recognized!", (20, 450), cv2.FONT_HERSHEY_COMPLEX, 2, (102, 255, 102), 3)
-
-                # Make login request to Node.js server with recognized face information as query parameters
-                response = requests.get('http://localhost:4000/Home.html')
-
-                # Check response from server
-                if response.status_code == 200:
-                    print("Login successful!")
-                    username = "Loc Pham"
-                    # Do something with the logged-in status, e.g., open a web page
-                    webbrowser.open(f'http://localhost:4000/Home.html?username={username}')  # Open home page in a web browser
-                    return "<script>window.close();</script>"
-                else:
-                    print("Login failed!")
+            if not ret:
+                break
             else:
-                cv2.putText(frame, "Unrecognized!", (20, 450), cv2.FONT_HERSHEY_COMPLEX, 2, (102, 102, 255), 3)
+                if counter % 30 == 0:
+                    try:
+                        threading.Thread(target=face_check, args=(frame.copy(),)).start()
+                    except ValueError:
+                        pass
+                counter += 1
 
-        # Perform face recognition on the frame
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
+                #If face is matched, display the message and send request to node.js server
+                if face_match:
+                    cv2.putText(frame, "Recognized!", (20, 450), cv2.FONT_HERSHEY_COMPLEX, 2, (102, 255, 102), 3)
 
-        #Perform appropriate conversion for image frames for video feed
-        yield (b'--frame\r\n'
-            b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+                    # Make login request to Node.js server with recognized face information as query parameters
+                    response = requests.get('http://localhost:4000/Home.html')
+
+                    # Check response from server
+                    if response.status_code == 200:
+                        print("Login successful!")
+                        username = "Loc Pham"
+                        # Do something with the logged-in status, e.g., open a web page
+                        webbrowser.open(f'http://localhost:4000/Home.html?username={username}')  # Open home page in a web browser
+                        return "<script>window.close();</script>"
+                    else:
+                        print("Login failed!")
+                else:
+                    cv2.putText(frame, "Unrecognized!", (20, 450), cv2.FONT_HERSHEY_COMPLEX, 2, (102, 102, 255), 3)
+
+            # Perform face recognition on the frame
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+
+            #Perform appropriate conversion for image frames for video feed
+            yield (b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+        else:
+            print("Login request failed!")
+
 
 #Route for Login.html page
 @app.route('/')
