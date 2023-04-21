@@ -25,7 +25,7 @@ app.get('/Home.html', (req, res) => {
   const username = req.query.username;
 
   // Render the Home.ejs file and send it as the response, passing the welcome message and content
-  res.render('Home', { welcomeMessage: 'Welcome to my web page ' + username, Content: 'Please add a voice chat' });
+  res.render('Home', { welcomeMessage: 'Welcome to my web page ' + username, Content: 'Please say something' });
 });
 
 

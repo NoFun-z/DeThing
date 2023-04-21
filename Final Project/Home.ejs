@@ -6,6 +6,64 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
+
+    <style>
+        body {
+            background-color: #292929;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .ActivateVoice {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: solid #20d39a 4px;
+            background-color: transparent;
+            padding: 12px;
+            margin: 0 auto;
+            text-align: center;
+            color: #d5cbcb;
+            font-size: 18px;
+            cursor: pointer;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -20%);
+            z-index: 999;
+            transform-origin: center center;
+        }
+
+        .ActivateVoice:hover {
+            background-color: #20d39a;
+            font-weight: bolder;
+            transition: 1s;
+        }
+
+        .ActivateVoice::after {
+            content: "";
+            display: block;
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border-radius: 50%;
+            border: 3px solid #20d39a;
+            box-shadow: 0 1px 14px #33e9af;
+            transform: scale(1);
+            transition: transform 1s;
+        }
+
+        .ActivateVoice:hover::after {
+            transform: scale(1.3);
+        }
+    </style>
 </head>
 
 <body>
@@ -15,9 +73,26 @@
     <p style="text-align: center;">
         <%= Content %>
     </p>
+    <button id="ActivateVoice" class="ActivateVoice">Activate Voice</button>
 </body>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-
+    $(document).ready(function () {
+        // Add event listener to the "Start Camera" button
+        $("#ActivateVoice").on("click", function () {
+            // Make an AJAX request to the Flask route to start the camera capture loop
+            $.ajax({
+                type: "GET",
+                url: "/start_voice",
+                success: function () {
+                    console.log("Good!");
+                },
+                error: function () {
+                    console.log("Failed to start voice.");
+                }
+            });
+        });
+    });
 </script>
 
 </html>
