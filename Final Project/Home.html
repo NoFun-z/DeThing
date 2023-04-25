@@ -1,12 +1,224 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
+    <style>
+        body {
+            background-color: #292929;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .ActivateVoice {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: solid #20d39a 4px;
+            background-color: transparent;
+            padding: 12px;
+            margin: 0 auto;
+            text-align: center;
+            color: #d5cbcb;
+            font-size: 18px;
+            cursor: pointer;
+            position: fixed;
+            top: 18%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+            transform-origin: center center;
+            display: none;
+        }
+
+        .ActivateVoice:hover {
+            background-color: #20d39a;
+            font-weight: bolder;
+            transition: 1s;
+        }
+
+        .ActivateVoice::after {
+            content: "";
+            display: block;
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border-radius: 50%;
+            border: 3px solid #20d39a;
+            box-shadow: 0 1px 14px #33e9af;
+            transform: scale(1);
+            transition: transform 1s;
+        }
+
+        .ActivateVoice:hover::after {
+            transform: scale(1.3);
+        }
+
+        .disabled {
+            filter: grayscale(100%);
+            /* Apply 100% grayscale effect to make it appear grayed out */
+            pointer-events: none;
+            /* Disable pointer events to prevent further clicks */
+        }
+
+        @media screen and (max-width: 1080px) {
+
+            .ActivateVoice {
+                width: 160px;
+                height: 160px;
+            }
+        }
+
+        @media screen and (max-width: 620px) {
+
+            .ActivateVoice {
+                font-size: small;
+                width: 130px;
+                height: 130px;
+            }
+        }
+
+        #chat-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .chat-item {
+            margin-bottom: 10px;
+            color: #3d3939;
+        }
+
+        .voice-text {
+            background-color: #F3EFEF;
+            padding: 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .bot-response {
+            background-color: #D0EAFD;
+            padding: 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+    </style>
 </head>
+
 <body>
-    <p id="Welcome-Mess" style="text-align: center;">Oh No</p>
+    <button id="ActivateVoice" class="ActivateVoice">Activate Voice</button>
+
+    <div
+        style="position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); max-width: 90%; padding: 8px; text-align: center; box-sizing: border-box;">
+        <ul id="chat-list" style="max-height: 400px; overflow-y: auto; width: 100%;"></ul>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.1/socket.io.js"></script>
+    <script>
+        $(document).ready(function () {
+
+            $("#ActivateVoice").on("click", function () {
+                $(this).prop("disabled", true);
+                $(this).addClass("disabled");
+                // Make an AJAX request to the Flask route to start the camera capture loop
+                $.ajax({
+                    type: "POST",
+                    url: "/start_voice",
+                    success: function () {
+                        console.log("Good!");
+                    },
+                    error: function () {
+                        console.log("Failed to start voice.");
+                    }
+                });
+            });
+
+            // Connect to the Flask-SocketIO server
+            var socket = io.connect('http://' + document.domain + ':' + location.port + '/home');
+
+            // Listen for the 'VerifyR' event
+            socket.on('VerifyR', function (data) {
+                var result = data.result;
+                // Update the DOM with the face recognition result
+                if (result) {
+                    console.log("Calling for AI response");
+                    $.ajax({
+                        type: "POST",
+                        url: "/get_ai_response",
+                        success: function () {
+                            console.log("AI is responsing")
+                        },
+                        error: function () {
+                            console.log("Bruh!");
+                        }
+                    });
+                } else {
+                    console.log("Oh Hell Nah");
+                }
+            });
+
+            // Listen for voice_text and bot_response events
+            socket.on('Q_Text', function (data) {
+                var voiceText = data.text;
+
+                // Create chat item element
+                var chatItem = document.createElement('li');
+                chatItem.className = 'chat-item';
+
+                // Create bot response element
+                var botResponseElem = document.createElement('div');
+                botResponseElem.className = 'bot-response';
+                botResponseElem.innerText = voiceText;
+
+                // Append bot response to chat item
+                chatItem.appendChild(botResponseElem);
+
+                // Append chat item to chat list
+                document.getElementById('chat-list').appendChild(chatItem);
+            });
+
+            // Listen for active button events
+            socket.on('AcButton', function (data) {
+                var result = data.result;
+
+                if (result) {
+                    $('#ActivateVoice').prop("disabled", false);
+                    $('#ActivateVoice').removeClass("disabled");
+                }
+            });
+
+            // Listen for voice_text and bot_response events
+            socket.on('My_text', function (data) {
+                var voiceText = data.text;
+
+                // Create chat item element
+                var chatItem = document.createElement('li');
+                chatItem.className = 'chat-item';
+
+                // Create voice text element
+                var voiceTextElem = document.createElement('div');
+                voiceTextElem.className = 'voice-text';
+                voiceTextElem.innerText = voiceText;
+
+                // Append voice text and bot response to chat item
+                chatItem.appendChild(voiceTextElem);
+
+                // Append chat item to chat list
+                document.getElementById('chat-list').appendChild(chatItem);
+            });
+        });
+    </script>
 </body>
+
 </html>

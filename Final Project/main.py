@@ -18,7 +18,7 @@ import eventlet
 eventlet.monkey_patch()
 
 # Initialize OpenAI API
-openai.api_key = "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"
+openai.api_key = "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"
 # Initialize the text to speech engine 
 app = Flask(__name__, template_folder='.')
 socketio = SocketIO(app, async_mode='eventlet')
@@ -40,11 +40,12 @@ def speak_text(text):
 cap = cv2.VideoCapture(0)
 capture_camera = False
 
-async def get_openai_response(user_input):
+def get_openai_response(user_input):
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content":
+            "You are a helpful assistant."},
             {"role": "user", "content": user_input},
         ],
         temperature=0.5,
@@ -57,12 +58,18 @@ async def get_openai_response(user_input):
     )
     bot_response = response["choices"][0]["message"]["content"]
     return bot_response
-    
+
+countert = 0
+User_input = None
+
 async def main():
+        global countert
+        global User_input
+        User_input = None
         with sr.Microphone() as source:
             recognizer.adjust_for_ambient_noise(source)
             print(f"Say 'Go' to wake me up")
-            eventlet.spawn(socketio.emit, 'Q_Text', {'text': 'Say "Go" to wake me up'}, namespace='/login')
+            socketio.emit('Q_Text', {'text': 'Say "Go" to wake me up.'}, namespace='/login')
             speak_text("Say go to wake me up")
             while True:
                 audio = recognizer.listen(source)
@@ -79,16 +86,16 @@ async def main():
                     if wake_word is not None:
                         break
                     else:
+                        socketio.emit('Q_Text', {'text': 'Not a wake word. Try again.'}, namespace='/login')
                         print("Not a wake word. Try again.")
                         speak_text("Not a wake word, Try again")
-                        eventlet.spawn(socketio.emit, 'Q_Text', {'text': 'Not a wake word. Try again.'}, namespace='/login')
                 except Exception as e:
                     print("Error transcribing audio: {0}".format(e))
                     continue
-
+            
             print("Speak a prompt...")
+            socketio.emit('Q_Text', {'text': 'What can I help you with?'}, namespace='/login')
             print("What can I help you with?")
-            eventlet.spawn(socketio.emit, 'Q_Text', {'text': 'What can I help you with?'}, namespace='/login')
             speak_text("What can I help you with?")
             audio = recognizer.listen(source)
 
@@ -99,26 +106,41 @@ async def main():
                 result = model.transcribe("audio_prompt.wav")
                 user_input = result["text"]
                 print(f"You said: {user_input}")
-                eventlet.spawn(socketio.emit, 'My_text', {'text': user_input}, namespace='/login')
+                socketio.emit('My_text', {'text': user_input}, namespace='/login')
             except Exception as e:
                 print("Error transcribing audio: {0}".format(e))
 
             if wake_word == GPT_WAKE_WORD:
                 # Send prompt to GPT-3.5-turbo API
-                print("almost there")
-                bot_response = await get_openai_response(user_input)
-
-            print(f"Bot: {bot_response}")
-            await eventlet.spawn(socketio.emit, 'Q_Text', {'text': bot_response}, namespace='/login')
-            speak_text(bot_response)
-            await eventlet.spawn(socketio.emit, 'AcButton', {'result': True}, namespace='/login')
+                countert += 1
+                print (countert)
+                socketio.emit('Q_Text', {'text': 'Generating response...'}, namespace='/login')
+                socketio.emit('VerifyR', {'result': user_input}, namespace='/login')
+                print("Generating response...")
+                speak_text("Generating response...")
+                
 
 # Route to start the camera
-@app.route('/start_camera')
+@app.route('/start_camera', methods=['POST'])
 def start_camera():
     global capture_camera
     capture_camera = True
     return 'Camera started.'
+
+@app.route('/get_ai_response', methods=['POST'])
+def AI_response():
+    global User_input
+    if User_input is not None:
+        print("okay response sent")
+        Bot_Response = get_openai_response(User_input)
+        speak_text(Bot_Response)
+        #socketio.emit('Q_Text', {'text': Bot_Response}, namespace='/login')
+        #socketio.emit('AcButton', {'result': True}, namespace='/login')
+        #emit('Q_Text', {'text': Bot_Response}, namespace='/login')
+        #emit('AcButton', {'result': True}, namespace='/login')
+        return "Response requested!"
+    else:
+        return "Failed"
 
 @app.route('/start_voice', methods=['POST'])
 def start_voice():
@@ -170,6 +192,7 @@ def generate_frames():
 
                     print("Login successful!")
                     eventlet.spawn(socketio.emit, 'face_recognized', {'result': True}, namespace='/login')
+                    cap.release()
                     break
                 else:
                     cv2.putText(frame, "Unrecognized!", (20, 450), cv2.FONT_HERSHEY_COMPLEX, 2, (102, 102, 255), 3)
@@ -197,6 +220,10 @@ async def handle_QText(data):
 @socketio.on('AcButton', namespace='/login')
 async def handle_AcBtn(data):
     voice_text = data['result']
+
+@socketio.on('VerifyR', namespace='/login')
+async def handle_R(data):
+    result = data['result']
 
 @socketio.on('My_text', namespace='/login')
 async def handle_My_event(data):

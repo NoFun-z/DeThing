@@ -241,7 +241,7 @@
             $("#LoGin").on("click", function () {
                 // Make an AJAX request to the Flask route to start the camera capture loop
                 $.ajax({
-                    type: "GET",
+                    type: "POST",
                     url: "/start_camera",
                     success: function () {
                         $("#video").attr("src", "{{ url_for('video_feed') }}");
@@ -251,105 +251,180 @@
                     }
                 });
                 StartCamera()
+            });
 
-                $("#ActivateVoice").on("click", function () {
-                    $(this).prop("disabled", true);
-                    $(this).addClass("disabled");
-                    // Make an AJAX request to the Flask route to start the camera capture loop
-                    $.ajax({
-                        type: "POST",
-                        url: "/start_voice",
-                        success: function () {
-                            console.log("Good!");
-                        },
-                        error: function () {
-                            console.log("Failed to start voice.");
-                        }
-                    });
-                });
-
-                // Connect to the Flask-SocketIO server
-                var socket = io.connect('http://' + document.domain + ':' + location.port + '/login');
-
-                // Listen for the 'face_recognized' event
-                socket.on('face_recognized', function (data) {
-                    var result = data.result;
-                    // Update the DOM with the face recognition result
-                    if (result) {
-                        $('#video-container').attr("src", "");
-                        $('#video-container').hide();
-                        $('#ActivateVoice').show();
-                        console.log("okay");
-                    } else {
-                        console.log("not okay");
+            $("#ActivateVoice").on("click", function () {
+                $(this).prop("disabled", true);
+                $(this).addClass("disabled");
+                // Make an AJAX request to the Flask route to start the camera capture loop
+                $.ajax({
+                    type: "POST",
+                    url: "/start_voice",
+                    success: function () {
+                        console.log("Good!");
+                    },
+                    error: function () {
+                        console.log("Failed to start voice.");
                     }
                 });
+            });
 
-                // Listen for voice_text and bot_response events
-                socket.on('Q_Text', function (data) {
-                    var voiceText = data.text;
+            // Connect to the Flask-SocketIO server
+            var socket = io.connect('http://' + document.domain + ':' + location.port + '/login');
 
-                    // Create chat item element
-                    var chatItem = document.createElement('li');
-                    chatItem.className = 'chat-item';
-
-                    // Create bot response element
-                    var botResponseElem = document.createElement('div');
-                    botResponseElem.className = 'bot-response';
-                    botResponseElem.innerText = voiceText;
-
-                    // Append bot response to chat item
-                    chatItem.appendChild(botResponseElem);
-
-                    // Append chat item to chat list
-                    document.getElementById('chat-list').appendChild(chatItem);
-                });
-
-                // Listen for active button events
-                socket.on('AcButton', function (data) {
-                    var result = data.result;
-
-                    if (result) {
-                        $('#ActivateVoice').prop("disabled", false);
-                        $('#ActivateVoice').removeClass("disabled");
-                    }
-                });
-
-                // Listen for voice_text and bot_response events
-                socket.on('My_text', function (data) {
-                    var voiceText = data.text;
-
-                    // Create chat item element
-                    var chatItem = document.createElement('li');
-                    chatItem.className = 'chat-item';
-
-                    // Create voice text element
-                    var voiceTextElem = document.createElement('div');
-                    voiceTextElem.className = 'voice-text';
-                    voiceTextElem.innerText = voiceText;
-
-                    // Append voice text and bot response to chat item
-                    chatItem.appendChild(voiceTextElem);
-
-                    // Append chat item to chat list
-                    document.getElementById('chat-list').appendChild(chatItem);
-                });
-
-                
-
-
-                function StartCamera() {
-                    document.getElementById('LoGin').disabled = true;
-                    document.getElementById('LoGin').style.display = "none";
-                    // Add a timeout of 3 seconds (3000 milliseconds)
-                    setTimeout(function () {
-                        // Show video container when button is clicked
-                        document.getElementById('video-container').style.visibility = "visible";
-                        document.getElementById('video-container').style.top = "50%";
-                        document.getElementById('video-container').style.transform = "translate(-50%, -50%) scale(1)";
-                    }, 3600);
+            // Listen for the 'face_recognized' event
+            socket.on('face_recognized', function (data) {
+                var result = data.result;
+                // Update the DOM with the face recognition result
+                if (result) {
+                    $('#video-container').attr("src", "");
+                    $('#video-container').hide();
+                    $('#ActivateVoice').show();
+                    console.log("okay");
+                } else {
+                    console.log("not okay");
                 }
             });
+
+            // Listen for the 'VerifyR' event
+            socket.on('VerifyR', function (data) {
+                var result = data.result;
+                // Update the DOM with the face recognition result
+                $.ajax({
+                    type: 'POST',
+                    url: '',
+                    data: { 'user_input': user_input },
+                    dataType: 'json',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+                    },
+                    success: function (data) {
+                        console.log("okay")
+                        let bot_response = data.response;
+                        // Create chat item element
+                        var chatItem = document.createElement('li');
+                        chatItem.className = 'chat-item';
+
+                        // Create bot response element
+                        var botResponseElem = document.createElement('div');
+                        botResponseElem.className = 'bot-response';
+                        botResponseElem.innerText = bot_response;
+
+                        // Append bot response to chat item
+                        chatItem.appendChild(botResponseElem);
+
+                        // Append chat item to chat list
+                        document.getElementById('chat-list').appendChild(chatItem);
+                    }
+                });
+            });
+
+            // Listen for voice_text and bot_response events
+            socket.on('Q_Text', function (data) {
+                var voiceText = data.text;
+
+                // Create chat item element
+                var chatItem = document.createElement('li');
+                chatItem.className = 'chat-item';
+
+                // Create bot response element
+                var botResponseElem = document.createElement('div');
+                botResponseElem.className = 'bot-response';
+                botResponseElem.innerText = voiceText;
+
+                // Append bot response to chat item
+                chatItem.appendChild(botResponseElem);
+
+                // Append chat item to chat list
+                document.getElementById('chat-list').appendChild(chatItem);
+            });
+
+            // Listen for active button events
+            socket.on('AcButton', function (data) {
+                var result = data.result;
+
+                if (result) {
+                    $('#ActivateVoice').prop("disabled", false);
+                    $('#ActivateVoice').removeClass("disabled");
+                }
+            });
+
+            // Listen for voice_text and bot_response events
+            socket.on('My_text', function (data) {
+                var voiceText = data.text;
+
+                // Create chat item element
+                var chatItem = document.createElement('li');
+                chatItem.className = 'chat-item';
+
+                // Create voice text element
+                var voiceTextElem = document.createElement('div');
+                voiceTextElem.className = 'voice-text';
+                voiceTextElem.innerText = voiceText;
+
+                // Append voice text and bot response to chat item
+                chatItem.appendChild(voiceTextElem);
+
+                // Append chat item to chat list
+                document.getElementById('chat-list').appendChild(chatItem);
+            });
+
+
+
+
+            function StartCamera() {
+                document.getElementById('LoGin').disabled = true;
+                document.getElementById('LoGin').style.display = "none";
+                // Add a timeout of 3 seconds (3000 milliseconds)
+                setTimeout(function () {
+                    // Show video container when button is clicked
+                    document.getElementById('video-container').style.visibility = "visible";
+                    document.getElementById('video-container').style.top = "50%";
+                    document.getElementById('video-container').style.transform = "translate(-50%, -50%) scale(1)";
+                }, 3600);
+            }
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    let cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        let cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            // $('#chat-form').on('submit', function (e) {
+            //     e.preventDefault();
+            //     let user_input = $('#user_input').val();
+            //     $('#user_input').val('');
+
+            //     if (user_input) {
+            //         let user_message = $('<p>').text('You: ' + user_input);
+            //         $('#chat-window').append(user_message);
+
+            //         $.ajax({
+            //             type: 'POST',
+            //             url: '',
+            //             data: { 'user_input': user_input },
+            //             dataType: 'json',
+            //             beforeSend: function (xhr) {
+            //                 xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+            //             },
+            //             success: function (data) {
+            //                 let bot_response = data.response;
+            //                 let bot_message = $('<p>').text('ChatGPT: ' + bot_response);
+            //                 $('#chat-window').append(bot_message);
+            //                 $('#chat-window').scrollTop($('#chat-window')[0].scrollHeight);
+            //             }
+            //         });
+            //     }
+            // });
         });
     </script>
 </body>
